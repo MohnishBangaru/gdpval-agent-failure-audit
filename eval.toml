@@ -1,0 +1,111 @@
+# Experiment configuration. Prices are USD per 1M tokens (official list prices, claude and gpt 2026-10-15,
+# gemini 2026-10-16).
+#
+# The experiment compares claude and gemini (--models claude gemini). The gpt entry is kept because its adapter
+# is still built and tested, but it is not part of the experiment.
+
+[dataset]
+parquet_url = "https://huggingface.co/datasets/openai/gdpval/resolve/11e7900cdcac61bc4daf59e65feb238acda98fbf/data/train-00000-of-00001.parquet"
+file_base_url = "https://huggingface.co/datasets/openai/gdpval/resolve/11e7900cdcac61bc4daf59e65feb238acda98fbf/"
+cache = "data"
+sha256 = "f8422fab9b21d90c0ee5f0659842ab666d418cb8940842918f9f4b0df7ae0202"   # of the pinned parquet
+max_download = 250000000   # bytes accepted for any single download
+occupations = [
+    "Accountants and Auditors",
+    "First-Line Supervisors of Production and Operating Workers",
+    "Order Clerks",
+]
+
+[sandbox]
+# :2 adds OCR (tesseract, pytesseract) to :1. The tag is hashed into the subject and grading fingerprints, so
+# runs and grades made on :1 (runs/pilot) stay valid records of :1, and any rerun needs a NEW run name.
+image = "gdpeval-sandbox:2"
+timeout = 300          # seconds allowed per shell command
+output_limit = 20000   # characters of stdout/stderr returned to the model
+memory = "4g"
+cpus = 2
+pids = 512             # processes allowed inside the container
+lifetime = 172800      # seconds a container may live (48 h); must cover turns * (timeout + model timeout)
+file_size = 1000000000 # bytes one file may grow to inside the container
+open_files = 1024      # file descriptors per process
+
+[limits]
+turns = 80             # model calls per attempt (one task x one model)
+cost = 4.0             # USD per attempt; the attempt stops as budget_limit and the run continues
+workers = 4            # attempts run concurrently
+disk = 2000000000      # bytes the workspace may hold before the attempt is stopped
+
+[runs]
+root = "runs"
+
+[models.claude]
+provider = "anthropic"
+model = "claude-sonnet-5-5"
+effort = "high"
+output = 32000
+retries = 4
+pricing = { input = 2.00, cache_read = 0.20, cache_write = 2.50, output = 10.00 }
+
+[models.gpt]
+provider = "openai"
+model = "gpt-6.1-sol"
+effort = "high"
+output = 32000
+retries = 4
+pricing = { input = 2.00, cache_read = 0.10, cache_write = 2.00, output = 10.00 }
+
+# Gemini 3.8 Flash. Output includes thinking tokens. Implicit caching has no write fee, so cache_write equals input.
+# These prices rise on 2027-01-01; update them (and note the date) before any run after that day.
+# The pair claude/gemini is NOT price-matched: Claude lists at $2 input / $10 output per 1M tokens, Gemini at
+# $0.75 / $3.75. Compare cost per task alongside quality.
+[models.gemini]
+provider = "google"
+model = "gemini-3.8-flash"
+effort = "high"
+output = 32000          # the model's own cap is 65536
+retries = 4
+pricing = { input = 0.75, cache_read = 0.075, cache_write = 0.75, output = 3.75 }
+
+# ---------------------------------------------------------------------------------------------------------------
+# Grading (docs/grading.md). Everything below is additive: nothing here feeds the run fingerprint.
+#
+# Judges are cross-family: no model grades its own work, and settings validation refuses a judge that shares a
+# provider (or an identifier) with the model it grades. The mapping below is configuration, not code, and it
+# applies to every attempt, reruns included.
+# Prices are USD per 1M tokens, official list prices of 2026-10-16.
+# ---------------------------------------------------------------------------------------------------------------
+
+# Claude Opus 5.5 grades every attempt by the gemini subject model.
+[judges.opus]
+provider = "anthropic"
+model = "claude-opus-5-5"
+effort = "medium"
+output = 32000
+retries = 4
+pricing = { input = 4.00, cache_read = 0.20, cache_write = 5.00, output = 20.00 }
+
+# Gemini 4 Argon grades every attempt by the claude subject model. Output is capped at 32768 by the model.
+# These prices rise to input 4 / output 20 on 2026-12-01; update them (and note the date) before grading after
+# that day, otherwise the recorded judge costs are understated.
+[judges.argon]
+provider = "google"
+model = "gemini-4-argon"
+effort = "medium"
+output = 32000
+retries = 4
+pricing = { input = 2.00, cache_read = 0.10, cache_write = 2.00, output = 10.00 }
+
+[grading]
+assignment = { gemini = "opus", claude = "argon" }   # subject model key -> judge key
+turns = 40             # model calls a judge may make per grade
+cost = 2.0             # USD a judge may spend per grade before it is stopped
+seed = 20261016        # seeds the opaque candidate identifiers and the human-review sample
+review_passes = 2      # passed rubric items sampled per graded attempt for human review (all if fewer)
+with_gold = false      # judges see the rubric only; true (or grade --with-gold) adds a gold dump for ablations
+dump_limit = 200000    # characters one dumped file may hold before it is truncated (and flagged)
+dump_timeout = 900     # seconds the dump container may run per folder
+dump_max_uncompressed = 200000000   # declared bytes above which an xlsx or docx is refused (zip bomb guard)
+stage_max_dirs = 200          # deliverable folders created per candidate
+stage_max_file = 100000000    # bytes one deliverable may hold to be staged for a judge
+stage_max_total = 500000000   # bytes of deliverables staged per candidate
+stage_max_files = 200         # deliverable files staged per candidate
