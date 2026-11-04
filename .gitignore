@@ -16,3 +16,5 @@ gan-harness/screenshots/
 .mypy_cache/
 dist/
 build/
+.vercel
+.env*
