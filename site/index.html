@@ -49,7 +49,7 @@
   --amber: #f1b45c; --amber-soft: #3a2a12; --ok: #7bcb9c; --ok-soft: #163226; --shade: rgba(0, 0, 0, 0.55); color-scheme: dark;
 }
 * { box-sizing: border-box }
-html { scroll-behavior: smooth }
+html { scroll-behavior: smooth; scroll-padding-top: 4rem }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto } }
 body { background: var(--paper); color: var(--ink); font: 400 1rem/1.6 var(--body) }
 .wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 }
@@ -623,7 +623,7 @@ h1, h2, h3, .subhead { text-wrap: balance }
 @media (max-width: 640px) { .limitgrid { grid-auto-rows: auto } }
 /* Intro and scope box span the same width as the takeaway cards below */
 header .lede, header .claim { max-width: none }
-/* Author and assignment on the right of the nav bar */
+/* Author and context on the right of the nav bar */
 nav.top .navmeta { margin-left: auto; white-space: nowrap; font: 500 0.78rem var(--body); color: var(--muted); padding-left: 16px }
 nav.top .navmeta b { color: var(--ink); font-weight: 600 }
 
@@ -653,7 +653,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
         <span><b>What it does not show:</b> It does not rank the models or estimate failure rates beyond this sample.</span>
       </div>
       <ol class="tldr" aria-label="Findings in three points">
-        <li><a href="#examples"><b>Both agents stated things that were not true.</b> 7 of the 8 high severity errors are Gemini's. Claude's text disagreed with its own cells in 3 tasks, and all three are one issue, CL-3.</a></li>
+        <li><a href="#examples"><b>Both agents stated things that were not true.</b> 7 of the 8 high severity errors are Gemini's. Each agent had its own AI grader, so this split does not compare the two models like for like. Claude's text disagreed with its own cells in 3 tasks, and all three are one issue, CL-3.</a></li>
         <li><a href="#scores"><b>Rubric scores missed serious errors.</b> The AI graders noted 19 of the 20 agent errors, yet 5 of the 8 high severity ones never lowered a score. Gemini's PO audit scored 98.8% with a credit memo that does not add up.</a></li>
         <li><a href="#data"><b>The fix is expert records on new tasks.</b> 16 of the 20 agent errors are model behaviour these records would target.</a></li>
       </ol>
@@ -774,6 +774,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
         <div><span class="pill det badge">Mostly Gemini</span><h3>Misstating its own work</h3><p>Gemini wrote an audit sign-off that never happened and labelled formula tables as PivotTables in 2 tasks. Claude disclosed the same shortcut but gave a false reason.</p><p class="fixline"><span class="eyebrow">Data that targets it</span>An expert shows what an agent may and may not claim, from approvals to substitutions.</p></div>
         <div><span class="pill det badge">Both models</span><h3>Handling missing or conflicting inputs</h3><p>Without OCR, Claude reported filled-in form fields as blank. With OCR, it flagged a missing IRS table instead of estimating it. Gemini used one of two conflicting values without a note.</p><p class="fixline"><span class="eyebrow">Data that targets it</span>An expert decides what to do with missing or conflicting inputs and marks when to estimate and when to flag.</p></div>
       </div>
+      <p class="cap">The model labels count verified errors. Each agent had a different AI grader, so the labels do not compare the models like for like.</p>
     <h3 class="subhead">2. Agent errors by severity</h3>
     <figure class="figure" aria-labelledby="sev-t">
       <h3 id="sev-t">Agent errors by severity and agent</h3>
@@ -784,7 +785,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
     <h3 class="subhead" id="detection">3. The AI graders noticed 19 of the 20 agent errors, but only 11 lowered a score.</h3>
     <figure class="figure detfig" aria-labelledby="det-t">
       <h3 id="det-t" class="sr-only">What the AI grader did with each agent error</h3>
-      <div class="detbar" role="img" aria-label="20 agent errors: 11 lowered the score, 7 logged only as a defect note, 1 noticed and passed, 1 missed">
+      <div class="detbar" role="group" aria-label="20 agent errors: 11 lowered the score, 7 logged only as a defect note, 1 noticed and passed, 1 missed">
         <span class="d1" style="flex:11" tabindex="0" data-tip="Lowered the score: 11 of 20"><b>11</b></span><span class="d2" style="flex:7" tabindex="0" data-tip="Defect note only: 7 of 20"><b>7</b></span><span class="d3" style="flex:1" tabindex="0" data-tip="Noticed and passed: 1 of 20, CL-1"><b>1</b></span><span class="d4" style="flex:1" tabindex="0" data-tip="Missed: 1 of 20, GD-3"><b>1</b></span>
       </div>
       <div class="detkey four">
@@ -871,7 +872,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
         <tr><td>Tasks</td><td>The study used 15 GDPval gold tasks, 5 each from accounting, production supervision and order clerking. Every task has input files, and 14 of the 18 expected deliverables are workbooks.</td></tr>
         <tr><td>Agents</td><td>Claude Sonnet 5.5 and Gemini 3.8 Flash each ran once per task with the same prompt, tools and offline sandbox, and an 80 turn limit. The tax return was rerun once with OCR.</td></tr>
         <tr><td>Graders</td><td>Grading was blinded and cross-family, so Claude Opus 5.5 graded Gemini and Gemini 4 Argon graded Claude. Each grader scored the rubric items and also logged defects outside the rubric.</td></tr>
-        <tr><td>Checks</td><td>I checked 92 grader results against the files, which were all 34 severe or tax-rerun findings and 58 sampled passes. Checker agents made 31 more checks.</td></tr>
+        <tr><td>Checks</td><td>I checked 92 grader results against the files, which were all 34 severe or tax-rerun findings and 58 sampled passes. For 48 of the passes I confirmed a checker agent's suggestion. Checker agents made 31 more checks.</td></tr>
         <tr><td>Detection</td><td>For each agent error I checked whether the grader failed a rubric item for it, logged it only as a defect note or missed it.</td></tr>
         <tr><td>Severity</td><td>The severity ratings are mine. High means a professional would act on a wrong number or have nothing to use, and the checker agents' rating is shown beside mine.</td></tr>
         <tr><td>Cost</td><td>The run ledgers record $46.95 in total. The first runs cost $43.66, which is $2.91 per task for two agents and grading, and the OCR rerun cost $3.29.</td></tr>
@@ -890,7 +891,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
         <div id="verdicts"></div>
         <p class="cap">These are grader results I checked against the files, so they are a different count from the 35 verified issues.</p>
         <ol class="plain small">
-        <li>57 of 58 sampled passes were correct.</li>
+        <li>57 of 58 sampled passes held up. I judged 10 of them on my own and all 10 held up. For the other 48 I confirmed a checker agent's suggestion.</li>
         <li>30 of 34 failure findings had the right facts: 14 correct and 16 partly correct. The 16 scored the work too harshly, and 12 of them came from one cause counted as several failed items, 11 from the tax deduction choice and 1 from the tour cost split. 3 were wrong and 1 could not be settled.</li>
         <li>The two graders were not equally strict on the same type of column label.</li>
       </ol>
@@ -957,7 +958,7 @@ nav.top .navmeta b { color: var(--ink); font-weight: 600 }
       <div><dt>Task mix</dt><dd>The 15 tasks use workbooks, PDFs and Word documents, plus one text file among the inputs. Their 18 expected deliverables are 14 Excel workbooks, 2 PDFs and 2 Word documents, and their 57 input files include 33 workbooks, 20 PDFs and 3 Word documents. None of them involves PowerPoint decks, images, video, code or zip files, which other GDPval tasks do.</dd></div>
       <div><dt>Coverage</dt><dd>Across all of GDPval, 85 of the 248 deliverables are PDFs, 65 are workbooks, 64 are Word documents and 17 are PowerPoint decks. Workbooks make up a larger share of the 15 tasks than of GDPval as a whole.</dd></div>
       <div><dt>Labelling</dt><dd>One person labelled the failures, and no second expert reviewed them. Checker agents made 31 of the 123 checks, and I spot-checked their work.</dd></div>
-      <div><dt>Grading</dt><dd>Each grader scored only one agent, so no grader saw both agents' work. On 12 of the 30 first-run attempts, the grader saw only part of a file because of a 200,000-character limit.</dd></div>
+      <div><dt>Grading</dt><dd>Each grader scored only one agent, so no grader saw both agents' work, and the split of errors between the models mixes agent behaviour with grader strictness. Claude Opus 5.5 logged 70 defect notes on Gemini's first runs, and Gemini 4 Argon logged 22 on Claude's. On 12 of the 30 first-run attempts, the grader saw only part of a file because of a 200,000-character limit.</dd></div>
       <div><dt>Setup</dt><dd>Four of the 20 agent errors come from the test setup and are tagged in the records. RF-1 started because the first tax run had no OCR, but the false report of blank fields was still the model's own error.</dd></div>
       <div><dt>Exposure</dt><dd>The tasks are public, and I did not test whether the models had seen them before.</dd></div>
       <div><dt>Not measured</dt><dd>I did not measure how long an expert takes to write each record, and I did not test whether training on these records changes model behaviour.</dd></div>
@@ -1073,6 +1074,11 @@ function showTip(e, html) {
 function hideTip() { tip.dataset.show = "false"; }
 function bindTips(root) {
   root.querySelectorAll("[data-tip]").forEach((el) => {
+    // A focusable mark needs its own name: inside role="img" its children are hidden from screen readers.
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", el.dataset.tip.replace(/<br\s*\/?>/gi, ", ").replace(/<[^>]*>/g, ""));
+    const box = el.parentElement && el.parentElement.closest('[role="img"]');
+    if (box) box.setAttribute("role", "group");
     el.addEventListener("mousemove", (e) => showTip(e, el.dataset.tip));
     el.addEventListener("mouseleave", hideTip);
     el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); showTip({ clientX: r.right, clientY: r.top }, el.dataset.tip); });
