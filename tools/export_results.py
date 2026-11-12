@@ -8,10 +8,16 @@ RUNS = ("pilot", "ocr")
 ATTEMPT_FILES = ("record.json", "transcript.jsonl")
 RUN_FILES = ("report.md", "report.csv", "review_sample.json", "ledger.jsonl")
 SHORT_NAME = 8
+VERDICTS = Path("pilot") / "review" / "verdicts_backup" / "verdicts"
+VERIFICATION = Path("pilot") / "review" / "verification"
 
 
 class ExportCollisionError(Exception):
     """Two attempts would be exported to the same shortened folder name."""
+
+
+class MissingSourceError(Exception):
+    """A source the export copies from is missing or empty."""
 
 
 class ResultsExporter:
@@ -41,14 +47,31 @@ class ResultsExporter:
         ]
 
     def export(self) -> int:
-        """Rebuild the target folder and return the number of files copied; a name collision stops it first."""
+        """Rebuild the target folder and return the number of files copied.
+
+        A missing or empty source, or a name collision, stops it before anything in the target is deleted.
+        """
         plans = {run: self.__attempts(run=run) for run in RUNS}
+        self.__check_sources(plans=plans)
         shutil.rmtree(self.__target / "runs", ignore_errors=True)
         copied = 0
         for run in RUNS:
             copied += self.__export_run(run=run, attempts=plans[run])
         copied += self.__export_review()
         return copied
+
+    def __check_sources(self, *, plans: dict[str, list[tuple[Path, Path]]]) -> None:
+        """Refuse to start unless every run has a recorded attempt and every review folder has its JSON files."""
+        missing = [run for run in RUNS if not any((attempt / "record.json").is_file() for attempt, _ in plans[run])]
+        for folder in (VERDICTS, VERIFICATION):
+            if not any((self.__runs / folder).glob("*.json")):
+                missing.append(str(folder))
+        if missing:
+            raise MissingSourceError(
+                f"{self.__runs} has nothing to export in {', '.join(missing)}; nothing was changed in {self.__target}. "
+                "The export rebuilds results/ from runs/, so every run needs an attempt with a record.json "
+                "and each review folder needs its JSON files."
+            )
 
     def __attempts(self, *, run: str) -> list[tuple[Path, Path]]:
         """Pair every final attempt of a run with its shortened export folder, refusing two that share a folder."""
@@ -69,8 +92,6 @@ class ResultsExporter:
     def __export_run(self, *, run: str, attempts: list[tuple[Path, Path]]) -> int:
         """Copy run-level reports and every final attempt's record, transcript, grades and deliverables."""
         source = self.__runs / run
-        if not source.is_dir():
-            return 0
         copied = 0
         for name in RUN_FILES:
             if (source / name).is_file():
@@ -90,12 +111,10 @@ class ResultsExporter:
     def __export_review(self) -> int:
         """Copy the human review verdicts and the second-pass verification files."""
         copied = 0
-        review = self.__runs / "pilot" / "review"
-        folders = ((review / "verdicts_backup" / "verdicts", "verdicts"), (review / "verification", "verification"))
-        for folder, name in folders:
+        for folder, name in ((self.__runs / VERDICTS, "verdicts"), (self.__runs / VERIFICATION, "verification")):
             target = self.__target / "review" / name
             shutil.rmtree(target, ignore_errors=True)
-            for item in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+            for item in sorted(folder.glob("*.json")):
                 copied += self.__copy(source=item, destination=target / item.name)
         return copied
 
@@ -107,10 +126,19 @@ class ResultsExporter:
         return 1
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> None:
+    """Export runs/ into results/, turning a refused export into an exit message instead of a traceback."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=Path, default=Path("runs"))
     parser.add_argument("--target", type=Path, default=Path("results"))
-    arguments = parser.parse_args()
+    arguments = parser.parse_args(argv)
     exporter = ResultsExporter(runs=arguments.runs, target=arguments.target)
-    print(f"copied {exporter.export()} files into {arguments.target}")
+    try:
+        copied = exporter.export()
+    except (MissingSourceError, ExportCollisionError) as error:
+        raise SystemExit(str(error)) from error
+    print(f"copied {copied} files into {arguments.target}")
+
+
+if __name__ == "__main__":
+    main()

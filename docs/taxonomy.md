@@ -138,7 +138,7 @@ Across attempts that produced a deliverable, the judges failed 159 rubric items.
 - False pass rate on the sample is 1 in 58, and that one comes from the setup in EV-4.
 - Outright false failures are 3 in 34, all the rounding convention in UC-5.
 - Partly mostly means the facts were right but one root cause was split across many items, or the failure belonged to the task.
-- The 48 passes reviewed after second-check suggestions were added agreed 48 of 48. Those count as two-reviewer agreement, not independent labels.
+- For 48 of the passes I confirmed a checker agent's prefilled suggestion. 47 of them have the checker's note in `results/review/verification`, and 46 of those 47 notes are the checker's text unchanged. Those 48 are the checker's labels with my sign-off, so they are not independent. The 10 passes I judged on my own all held up.
 
 ## What this means
 

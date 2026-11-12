@@ -12,22 +12,22 @@ The goal is to find failure modes and show what data would fix them. It is not a
 
 The harness was built in gated steps. Each step had a written plan, tests before code, a generator and evaluator loop that scored the build, and a code and security review before commit. The records are in [gan-harness/](gan-harness/build-report.md).
 
-After the study, every change went through a pull request with the pre-commit checks in CI, and Claude Opus 5.5 reviewed each one through the Claude API. The reviews caught real bugs. A sandbox never noticed a dead container, the review tools could copy host files into the results, and some figures on the website did not match its own data. All of these are fixed in this repository.
+After the study, Claude Opus 5.5 reviewed every change through the Claude API, and the pre-commit checks ran on each one. The reviews caught real bugs. A sandbox never noticed a dead container, the review tools could copy host files into the results, and some figures on the website did not match its own data. All of these are fixed in this repository.
 
 ## Results
 
 1. 56 of the 159 failed rubric items on delivered work trace to the rubric, the grader or the dataset. Two rubrics expect wrong numbers, one contradicts its own prompt and one prompt names an input file that GDPval does not ship.
 2. 9 of the 20 verified agent errors are caught by a script. The other 11 need a reviewer who has read the input files.
 3. The most serious agent errors look like finished work. One agent wrote an audit sign-off that never happened. The same agent also split a credit memo across customers in a way that does not add up.
-4. The graders were reliable on passes, 57 of 58 correct. On failures they had the facts right but often counted one cause many times.
+4. The graders held up on passes. 57 of the 58 sampled passes were right. I judged 10 of them on my own and all 10 held up. For the other 48 I confirmed a checker agent's suggestion, so those are not independent labels. On failures they had the facts right but often counted one cause many times.
 
 | | Value |
 |---|---|
 | Tasks | 15, five each from Accountants and Auditors, Production Supervisors and Order Clerks |
 | Agents | Claude Sonnet 5.5 and Gemini 3.8 Flash, one attempt per task, plus one OCR rerun of the tax task |
 | Graders | Claude Opus 5.5 graded Gemini. Gemini 4 Argon graded Claude. Rubric only, blinded files |
-| Human review | 92 grader results checked by hand. 31 more checks on 26 candidate findings by checker agents, spot-checked by hand |
-| API cost | $47.18 in total: $27.91 for agent runs, $15.75 for grading, $3.29 for the OCR rerun and $0.23 for checks |
+| Human review | 92 grader results checked by hand, 48 of them by confirming a checker agent's suggestion. 31 more checks on 26 candidate findings by checker agents, spot-checked by hand |
+| API cost | $46.95 in total from the run ledgers: $27.91 for agent runs, $15.75 for grading and $3.29 for the OCR rerun. The checker agents' spend is not in the ledgers |
 
 ## Development workflow
 
@@ -107,7 +107,8 @@ uv run gdpeval run --run pilot --models claude gemini
 uv run gdpeval grade --run pilot
 uv run gdpeval report --run pilot --final
 
-# copy the evidence from runs/ into results/
+# copy the evidence from runs/ into results/. It needs the pilot and ocr runs and the review
+# folders, and stops before deleting anything if one is missing
 uv run python tools/export_results.py
 ```
 
